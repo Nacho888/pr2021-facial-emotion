@@ -132,4 +132,5 @@ dmypy.json
 .idea/
 
 # Datasets folder
-.datasets/
+!datasets/
+datasets/*
