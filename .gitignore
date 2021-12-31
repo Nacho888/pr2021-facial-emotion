@@ -134,3 +134,14 @@ dmypy.json
 # Datasets folder
 !datasets/
 datasets/*
+
+# Models folder
+!models/
+models/*
+
+# Images folder
+!img/
+img/*
+
+# Logs folder
+untitled_project/

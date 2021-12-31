@@ -1,11 +1,11 @@
 import os
 import random
 import cv2
-import numpy as np
-from collections import Counter
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+from keras_tuner import RandomSearch
+from sklearn import preprocessing
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Activation, Dropout, Flatten, Dense, Rescaling
 
@@ -28,7 +28,7 @@ def load_data(dataset_name, width=None, height=None):
             axs[_i, _j].imshow(data[index], cmap=plt.cm.gray)
             axs[_i, _j].set_title(labels[index])
     fig.tight_layout(pad=1.0)
-    # fig.savefig("../img/random_sample.png")
+    fig.savefig("img/random_sample.png")
     fig.show()
 
     le = preprocessing.LabelEncoder()
@@ -39,27 +39,47 @@ def load_data(dataset_name, width=None, height=None):
     return data_array, labels_array
 
 
-def create_model(class_count, width, height):
+def create_model(hp):
     model_architecture = Sequential()
-    model_architecture.add(Rescaling(1./255, input_shape=(width, height, 1)))
-    model_architecture.add(Conv2D(32, (3, 3), ))
-    model_architecture.add(Activation("relu"))
+    model_architecture.add(Rescaling(1. / 255, input_shape=(48, 48, 1)))
+    model_architecture.add(Conv2D(32, (3, 3), padding="same", activation=hp.Choice("activation",
+                                                                                   values=["relu", "tanh", "sigmoid"],
+                                                                                   default="relu")))
     model_architecture.add(MaxPooling2D(pool_size=(2, 2)))
-    model_architecture.add(Dropout(0.25))
+    model_architecture.add(Dropout(hp.Float("dropout",
+                                            min_value=0.0,
+                                            max_value=0.5,
+                                            default=0.2,
+                                            step=0.1)))
 
-    model_architecture.add(Conv2D(64, (3, 3)))
-    model_architecture.add(Activation("relu"))
+    model_architecture.add(Conv2D(64, (3, 3), padding="same", activation=hp.Choice("activation",
+                                                                                   values=["relu", "tanh", "sigmoid"],
+                                                                                   default="relu")))
     model_architecture.add(MaxPooling2D(pool_size=(2, 2)))
-    model_architecture.add(Dropout(0.25))
+    model_architecture.add(Dropout(hp.Float("dropout",
+                                            min_value=0.0,
+                                            max_value=0.5,
+                                            default=0.2,
+                                            step=0.1)))
 
     model_architecture.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-    model_architecture.add(Dense(64))
-    model_architecture.add(Activation("relu"))
-    model_architecture.add(Dropout(0.25))
-    model_architecture.add(Dense(class_count))
+    model_architecture.add(Dense(64, activation=hp.Choice("dense_activation",
+                                                          values=["relu", "tanh", "sigmoid"],
+                                                          default="relu")))
+    model_architecture.add(Dropout(hp.Float("dropout",
+                                            min_value=0.0,
+                                            max_value=0.5,
+                                            default=0.2,
+                                            step=0.1)))
+
+    model_architecture.add(Dense(7))
     model_architecture.add(Activation("softmax"))
 
-    model_architecture.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+    model_architecture.compile(loss="sparse_categorical_crossentropy", optimizer=hp.Choice("optimizer",
+                                                                                           values=["adam", "rmsprop",
+                                                                                                   "sgd", "adagrad"],
+                                                                                           default="adam"),
+                               metrics=["accuracy"])
 
     return model_architecture
 
@@ -85,24 +105,32 @@ def plot_loss_acc_from_history(hist, epoch_count):
     plt.plot(epochs_range, val_loss, label='Validation Loss')
     plt.legend(loc='upper right')
     plt.title('Training and Validation Loss')
-    # plt.savefig("../img/random_sample.png")
+    plt.savefig("img/random_sample.png")
     plt.show()
 
 
 dataset = "ck-plus"
 X, y = load_data(dataset)
+X = np.expand_dims(X, 3)
 w = X.shape[1]
 h = X.shape[2]
-print(w, h)
-total_emotions = len(Counter(y).keys())
+X = np.expand_dims(X, 3)
+print(f"Input shape: ({w}x{h})")
+# total_emotions = len(Counter(y).keys())
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-X_train = np.expand_dims(X_train, 3)
-X_test = np.expand_dims(X_test, 3)
+tuner_rs = RandomSearch(
+            create_model,
+            objective="val_accuracy",
+            seed=8,
+            max_trials=10,
+            executions_per_trial=2)
 
-model = create_model(total_emotions, w, h)
-model.summary()
 n_epochs = 25
-history = model.fit(X_train, y_train, batch_size=32, epochs=n_epochs, validation_data=(X_test, y_test))
+with tf.device("/gpu:0"):
+    tuner_rs.search(X, y, epochs=n_epochs, validation_split=0.2, verbose=1)
+
+best_model = tuner_rs.get_best_models()[0]
+
+history = best_model.fit(X, y, epochs=n_epochs, validation_split=0.2, verbose=1)
 plot_loss_acc_from_history(history, n_epochs)
-# model.save(f"models/{dataset}.h5")
+best_model.save(f"models/{dataset}.h5")
