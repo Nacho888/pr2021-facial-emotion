@@ -1,6 +1,7 @@
 import os
 import random
 import cv2
+import shutil
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
@@ -8,6 +9,8 @@ from keras_tuner import RandomSearch
 from sklearn import preprocessing
 from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Activation, Dropout, Flatten, Dense, Rescaling
+# from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.optimizers import Adam, RMSprop, Adagrad, SGD
 
 
 def load_data(dataset_name, width=None, height=None):
@@ -75,18 +78,27 @@ def create_model(hp):
     model_architecture.add(Dense(7))
     model_architecture.add(Activation("softmax"))
 
-    model_architecture.compile(loss="sparse_categorical_crossentropy", optimizer=hp.Choice("optimizer",
-                                                                                           values=["adam", "rmsprop",
-                                                                                                   "sgd", "adagrad"],
-                                                                                           default="adam"),
-                               metrics=["accuracy"])
+    optimizer = hp.Choice("optimizer", values=["adam", "rmsprop", "sgd", "adagrad"], default="adam")
+
+    # hp.Choice("momentum", values=[0.5, 0.9, 0.99], default=0.5)
+
+    if optimizer == "adam":
+        op = Adam(learning_rate=hp.Float("learning_rate", min_value=0.1, max_value=0.01, default=0.1, step=0.1))
+    elif optimizer == "rmsprop":
+        op = RMSprop(learning_rate=hp.Float("learning_rate", min_value=0.1, max_value=0.01, default=0.1, step=0.1))
+    elif optimizer == "sgd":
+        op = SGD(learning_rate=hp.Float("learning_rate", min_value=0.1, max_value=0.01, default=0.1, step=0.1))
+    else:
+        op = Adagrad(learning_rate=hp.Float("learning_rate", min_value=0.1, max_value=0.01, default=0.1, step=0.1))
+
+    model_architecture.compile(loss="sparse_categorical_crossentropy", optimizer=op, metrics=["sparse_categorical_accuracy"])
 
     return model_architecture
 
 
 def plot_loss_acc_from_history(hist, epoch_count):
-    acc = hist.history["accuracy"]
-    val_acc = hist.history["val_accuracy"]
+    acc = hist.history["sparse_categorical_accuracy"]
+    val_acc = hist.history["val_sparse_categorical_accuracy"]
 
     loss = hist.history["loss"]
     val_loss = hist.history["val_loss"]
@@ -114,23 +126,24 @@ X, y = load_data(dataset)
 X = np.expand_dims(X, 3)
 w = X.shape[1]
 h = X.shape[2]
-X = np.expand_dims(X, 3)
 print(f"Input shape: ({w}x{h})")
 # total_emotions = len(Counter(y).keys())
 
+shutil.rmtree("untitled_project/", ignore_errors=True)  # remove old results and forces a new run
 tuner_rs = RandomSearch(
             create_model,
-            objective="val_accuracy",
+            objective="val_sparse_categorical_accuracy",
             seed=8,
             max_trials=10,
             executions_per_trial=2)
 
 n_epochs = 25
 with tf.device("/gpu:0"):
+    print("Starting tuner...")
     tuner_rs.search(X, y, epochs=n_epochs, validation_split=0.2, verbose=1)
 
+print("Retraining best model...")
 best_model = tuner_rs.get_best_models()[0]
-
 history = best_model.fit(X, y, epochs=n_epochs, validation_split=0.2, verbose=1)
 plot_loss_acc_from_history(history, n_epochs)
 best_model.save(f"models/{dataset}.h5")
