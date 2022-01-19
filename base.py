@@ -12,6 +12,7 @@ from tensorflow.python.keras import Sequential
 from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Activation, Dropout, Flatten, Dense, Rescaling
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.optimizers import Adam, RMSprop, Adagrad, SGD
+from tensorflow.python.keras.regularizers import l2
 
 
 def load_data(dataset_name, width=None, height=None):
@@ -46,9 +47,14 @@ def load_data(dataset_name, width=None, height=None):
 def create_model(hp):
     model_architecture = Sequential()
     model_architecture.add(Rescaling(1. / 255, input_shape=(48, 48, 1)))
+
     model_architecture.add(Conv2D(32, (3, 3), padding="same", activation=hp.Choice("activation1",
                                                                                    values=["relu", "tanh", "sigmoid"],
-                                                                                   default="relu")))
+                                                                                   default="relu"),
+                                  kernel_regularizer=l2(
+                                      hp.Float("l2_conv1", min_value=0.0, max_value=0.01, default=0.0)),
+                                  bias_regularizer=l2(
+                                      hp.Float("l2_conv1_bias", min_value=0.0, max_value=0.01, default=0.0))))
     model_architecture.add(MaxPooling2D(pool_size=(2, 2)))
     model_architecture.add(Dropout(hp.Float("dropout1",
                                             min_value=0.0,
@@ -58,7 +64,11 @@ def create_model(hp):
 
     model_architecture.add(Conv2D(64, (3, 3), padding="same", activation=hp.Choice("activation2",
                                                                                    values=["relu", "tanh", "sigmoid"],
-                                                                                   default="relu")))
+                                                                                   default="relu"),
+                                  kernel_regularizer=l2(
+                                      hp.Float("l2_conv2", min_value=0.0, max_value=0.01, default=0.0)),
+                                  bias_regularizer=l2(
+                                      hp.Float("l2_conv2_bias", min_value=0.0, max_value=0.01, default=0.0))))
     model_architecture.add(MaxPooling2D(pool_size=(2, 2)))
     model_architecture.add(Dropout(hp.Float("dropout2",
                                             min_value=0.0,
@@ -69,19 +79,24 @@ def create_model(hp):
     model_architecture.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
     model_architecture.add(Dense(64, activation=hp.Choice("dense_activation",
                                                           values=["relu", "tanh", "sigmoid"],
-                                                          default="relu")))
+                                                          default="relu"),
+                                 kernel_regularizer=l2(
+                                     hp.Float("l2_dense1", min_value=0.0, max_value=0.01, default=0.0)),
+                                 bias_regularizer=l2(
+                                     hp.Float("l2_dense1_bias", min_value=0.0, max_value=0.01, default=0.0))))
     model_architecture.add(Dropout(hp.Float("dropout3",
                                             min_value=0.0,
                                             max_value=0.5,
                                             default=0.2,
                                             step=0.1)))
 
-    model_architecture.add(Dense(7))
+    model_architecture.add(Dense(7, kernel_regularizer=l2(
+                                     hp.Float("l2_dense_last", min_value=0.0, max_value=0.01, default=0.0)),
+                                 bias_regularizer=l2(
+                                     hp.Float("l2_dense_last_bias", min_value=0.0, max_value=0.01, default=0.0))))
     model_architecture.add(Activation("softmax"))
 
     optimizer = hp.Choice("optimizer", values=["adam", "rmsprop", "sgd", "adagrad"], default="adam")
-
-    # hp.Choice("momentum", values=[0.5, 0.9, 0.99], default=0.5)
 
     with hp.conditional_scope("optimizer", optimizer):
         if optimizer == "adam":
