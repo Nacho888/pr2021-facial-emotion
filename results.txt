@@ -1,0 +1,125 @@
+# JAFFE
+
+Best model architecture
+
+	Model: "sequential"
+	_________________________________________________________________
+	Layer (type)                 Output Shape              Param #   
+	=================================================================
+	rescaling (Rescaling)        (None, 48, 48, 1)         0         
+	_________________________________________________________________
+	conv2d (Conv2D)              (None, 48, 48, 32)        320       
+	_________________________________________________________________
+	max_pooling2d (MaxPooling2D) (None, 24, 24, 32)        0         
+	_________________________________________________________________
+	dropout (Dropout)            (None, 24, 24, 32)        0         
+	_________________________________________________________________
+	conv2d_1 (Conv2D)            (None, 24, 24, 64)        18496     
+	_________________________________________________________________
+	max_pooling2d_1 (MaxPooling2 (None, 12, 12, 64)        0         
+	_________________________________________________________________
+	dropout_1 (Dropout)          (None, 12, 12, 64)        0         
+	_________________________________________________________________
+	flatten (Flatten)            (None, 9216)              0         
+	_________________________________________________________________
+	dense (Dense)                (None, 64)                589888    
+	_________________________________________________________________
+	dropout_2 (Dropout)          (None, 64)                0         
+	_________________________________________________________________
+	dense_1 (Dense)              (None, 6)                 390       
+	_________________________________________________________________
+	activation (Activation)      (None, 6)                 0         
+	=================================================================
+	Total params: 609,094
+	Trainable params: 609,094
+	Non-trainable params: 0
+	_________________________________________________________________
+
+Best model hyperparams
+
+	Results summary
+	Results in .\untitled_project
+	Showing 1 best trials
+	Objective(name='val_sparse_categorical_accuracy', direction='max')
+	Trial summary
+	Hyperparameters:
+	activation1: tanh
+	dropout1: 0.30000000000000004
+	activation2: relu
+	dropout2: 0.30000000000000004
+	dense_activation: sigmoid
+	dropout3: 0.1
+	optimizer: rmsprop
+	learning_rate: 0.001
+	Score: 0.7094594538211823
+
+jaffe dataset [test loss, test accuracy]: [0.8931617736816406, 0.6393442749977112]
+
+# CK+
+
+Best model architecture
+
+	Model: "sequential"
+	_________________________________________________________________
+	Layer (type)                 Output Shape              Param #   
+	=================================================================
+	rescaling (Rescaling)        (None, 48, 48, 1)         0         
+	_________________________________________________________________
+	conv2d (Conv2D)              (None, 48, 48, 32)        320       
+	_________________________________________________________________
+	max_pooling2d (MaxPooling2D) (None, 24, 24, 32)        0         
+	_________________________________________________________________
+	dropout (Dropout)            (None, 24, 24, 32)        0         
+	_________________________________________________________________
+	conv2d_1 (Conv2D)            (None, 24, 24, 64)        18496     
+	_________________________________________________________________
+	max_pooling2d_1 (MaxPooling2 (None, 12, 12, 64)        0         
+	_________________________________________________________________
+	dropout_1 (Dropout)          (None, 12, 12, 64)        0         
+	_________________________________________________________________
+	flatten (Flatten)            (None, 9216)              0         
+	_________________________________________________________________
+	dense (Dense)                (None, 64)                589888    
+	_________________________________________________________________
+	dropout_2 (Dropout)          (None, 64)                0         
+	_________________________________________________________________
+	dense_1 (Dense)              (None, 6)                 390       
+	_________________________________________________________________
+	activation (Activation)      (None, 6)                 0         
+	=================================================================
+	Total params: 609,094
+	Trainable params: 609,094
+	Non-trainable params: 0
+	_________________________________________________________________
+
+Best model hyperparams
+
+	Results summary
+	Results in .\untitled_project
+	Showing 1 best trials
+	Objective(name='val_sparse_categorical_accuracy', direction='max')
+	Trial summary
+	Hyperparameters:
+	activation1: tanh
+	dropout1: 0.4
+	activation2: tanh
+	dropout2: 0.4
+	dense_activation: sigmoid
+	dropout3: 0.1
+	optimizer: adam
+	learning_rate: 0.005436907489597525
+	Score: 1.0
+
+ck-plus dataset [test loss, test accuracy]: [0.05606352910399437, 0.9838709831237793]
+
+# Summary
+
+Caucasian model using Asian data [test loss, test accuracy]: [1.756974697113037, 0.3870967626571655]
+Asian model using Caucasian data [test loss, test accuracy]: [3.901468515396118, 0.18579235672950745]
+
+jaffe dataset:
+	Training score: 0.8989071249961853
+	Test score: 0.6393442749977112
+ck-plus dataset:
+	Training score: 0.9986504912376404
+	Test score: 0.9838709831237793
