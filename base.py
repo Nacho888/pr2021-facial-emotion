@@ -207,6 +207,7 @@ for dataset in datasets:
     print(f"{dataset['name']} dataset [test loss, test accuracy]:", eval_result)
     disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix(y_test, hypermodel.predict_classes(X_test)))
     disp.plot(values_format="d")
+    disp.ax_.set_title(f"{dataset['name']} model with non-mixed test data")
     plt.savefig(f"img/{dataset['name']}_confusion_matrix.png")
     plt.show()
 
@@ -218,20 +219,24 @@ for dataset in datasets:
     dataset["model"] = hypermodel
     dataset["scores"] = [hypermodel.evaluate(X_train, y_train, verbose=0), eval_result]
 
+# JAFFE
 eval_result = datasets[0]["model"].evaluate(datasets[1]["matrices"][1], datasets[1]["matrices"][3], verbose=0)
-print("Caucasian model using Asian data [test loss, test accuracy]:", eval_result)
+print("Asian model using Caucasian data [test loss, test accuracy]:", eval_result)
 disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix(datasets[1]["matrices"][3],
                                                                 datasets[0]["model"].predict_classes(datasets[1]["matrices"][1])))
 disp.plot(values_format="d")
-plt.savefig(f"img/{datasets[0]['name']}_asian_confusion_matrix.png")
+disp.ax_.set_title(f"{datasets[0]['name']} model with Caucasian test data")
+plt.savefig(f"img/{datasets[0]['name']}_caucasian_confusion_matrix.png")
 plt.show()
 
+# CK+
 eval_result = datasets[1]["model"].evaluate(datasets[0]["matrices"][1], datasets[0]["matrices"][3], verbose=0)
-print("Asian model using Caucasian data [test loss, test accuracy]:", eval_result)
+print("Caucasian model using Asian data [test loss, test accuracy]:", eval_result)
 disp = ConfusionMatrixDisplay(confusion_matrix=confusion_matrix(datasets[0]["matrices"][3],
                                                                 datasets[1]["model"].predict_classes(datasets[0]["matrices"][1])))
 disp.plot(values_format="d")
-plt.savefig(f"img/{datasets[1]['name']}_caucasian_confusion_matrix.png")
+disp.ax_.set_title(f"{datasets[1]['name']} model with Asian test data")
+plt.savefig(f"img/{datasets[1]['name']}_asian_confusion_matrix.png")
 plt.show()
 
 # Summary of results
@@ -239,4 +244,3 @@ for dataset in datasets:
     print(f"{dataset['name']} dataset:")
     print(f"\tTraining score: {dataset['scores'][0][1]}")
     print(f"\tTest score: {dataset['scores'][1][1]}")
-
